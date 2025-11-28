@@ -5,12 +5,24 @@ import * as dat from "dat.gui";
 import gsap from "gsap";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
+/**
+ * @file main.js
+ * @description Main entry point for the Princess Images slideshow.
+ * This script initializes the Three.js scene, manages audio playback,
+ * handles user input for navigation, and renders the image gallery.
+ */
+
 const myAudio = document.querySelector("#myAudio");
 myAudio.currentTime = 37.9;
 myAudio.volume = 0.1;
 let mainCurrentTime = 0;
 
 let visibleImage = 0;
+
+/**
+ * Array of title objects containing metadata for each slide.
+ * @type {Array<{id: number, title: string, subtitle: string}>}
+ */
 const titles = [
   {
     id: 1,
@@ -241,7 +253,16 @@ const titles = [
 ];
 
 const main = document.querySelector("#main");
-titles.map((title) => {
+
+/**
+ * Generates and appends HTML structure for a title slide.
+ *
+ * @param {Object} title - The title object.
+ * @param {number} title.id - The unique identifier for the title.
+ * @param {string} title.title - The main title text.
+ * @param {string} title.subtitle - The subtitle text.
+ */
+function createTitleElement(title) {
   main.innerHTML += `
       <div id="${title.id}" class="items">
         <div class="container">
@@ -250,7 +271,9 @@ titles.map((title) => {
         </div>
       </div>
   `;
-});
+}
+
+titles.forEach(createTitleElement);
 
 // SCENE
 const scene = new THREE.Scene();
@@ -299,12 +322,22 @@ scene.add(pointLight, ambientLight);
 
 const texture = new THREE.TextureLoader();
 
-for (let i = 0; i < 30; i++) {
-  let demX = 0;
-  let demY = 0;
-  const tex = texture.load(`princess-images/${i + 1}.jpg`, function (t) {
-    demX = t.image.width / 1000;
-    demY = t.image.height / 1000;
+/**
+ * Creates a callback function to handle texture loading for a specific slide index.
+ *
+ * @param {number} i - The index of the slide (0-based).
+ * @returns {function(THREE.Texture): void} A callback function that takes a loaded texture and adds a mesh to the scene.
+ */
+function createTextureLoadedCallback(i) {
+  return function (t) {
+    // These variables seem unused in the original code's logic scope or are just local helpers
+    // But they were defined locally in the loop in original code:
+    // let demX = 0; let demY = 0;
+    // demX = t.image.width / 1000;
+    // demY = t.image.height / 1000;
+
+    const demX = t.image.width / 1000;
+    const demY = t.image.height / 1000;
 
     const material = new THREE.MeshBasicMaterial({
       map: t,
@@ -313,45 +346,28 @@ for (let i = 0; i < 30; i++) {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.x = 5 * i;
     scene.add(mesh);
-  });
+  };
 }
+
+for (let i = 0; i < 30; i++) {
+  texture.load(`princess-images/${i + 1}.jpg`, createTextureLoadedCallback(i));
+}
+
 /**
- * Lights
+ * Lights setup
  **/
 camera.lookAt(0.0009, 0, 0.09);
 camera.position.x = 0.5;
 
 const speed = 0.3;
 
-// addEventListener("wheel", function (e) {
-//   if (e.deltaY > 0) {
-//     // camera.position.x += (speed * 5) / 0.3;
-//     visibleImage += 1;
-//     gsap.to(camera.position, {
-//       x: camera.position.x + (speed * 5) / 0.3,
-//       duration: 1,
-//       ease: "power1.out",
-//     });
-//     gsap.to(main, {
-//       top: 100 * -visibleImage + "vh",
-//       duration: 1,
-//       ease: "power1.out",
-//     });
-//   } else {
-//     visibleImage -= 1;
-//     gsap.to(camera.position, {
-//       x: camera.position.x - (speed * 5) / 0.3,
-//       duration: 1,
-//       ease: "power1.out",
-//     });
-//     gsap.to(main, {
-//       top: 100 * -visibleImage + "vh",
-//       duration: 1,
-//       ease: "power1.out",
-//     });
-//   }
-// });
-window.addEventListener("keyup", function (e) {
+/**
+ * Handles keyboard events to control slideshow navigation and audio playback.
+ *
+ * @param {KeyboardEvent} e - The keyboard event triggered by the user.
+ * @returns {void}
+ */
+function handleKeyDown(e) {
   console.log(e);
   if (e.code === "ArrowDown") {
     visibleImage += 1;
@@ -441,11 +457,19 @@ window.addEventListener("keyup", function (e) {
       myAudio.play();
     }
   }
-});
+}
+
+window.addEventListener("keyup", handleKeyDown);
 
 // const bg = texture.load("bg.jpg");
 // scene.background = bg;
 
+/**
+ * The main animation loop.
+ * Updates the renderer and requests the next animation frame.
+ *
+ * @returns {void}
+ */
 function animate() {
   requestAnimationFrame(animate);
 
